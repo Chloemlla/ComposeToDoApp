@@ -15,7 +15,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MaterialTheme {
-                val viewModel: TodoViewModel = viewModel()
+                // Use viewModel with factory for AndroidViewModel
+                val viewModel: TodoViewModel = viewModel(
+                    factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
+                        .getInstance(application)
+                )
                 TodoScreen(viewModel)
             }
         }

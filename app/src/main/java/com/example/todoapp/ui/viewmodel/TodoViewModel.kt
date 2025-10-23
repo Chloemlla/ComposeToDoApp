@@ -39,4 +39,11 @@ class TodoViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteTodo(todo: Todo) = viewModelScope.launch {
         repository.delete(todo)
     }
+    fun deleteAllCompleted() {
+        viewModelScope.launch {
+            allTodos.value.filter { it.isDone }.forEach {
+                repository.delete(it)
+            }
+        }
+    }
 }
