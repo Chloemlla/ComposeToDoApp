@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -25,6 +26,14 @@ import androidx.compose.ui.unit.sp
 import com.example.todoapp.data.model.Todo
 import com.example.todoapp.ui.viewmodel.TodoViewModel
 
+/**
+ * The main screen of the To-Do application.
+ *
+ * This screen displays a list of to-do items, an input field to add new tasks,
+ * and filter chips to filter the tasks by their completion status.
+ *
+ * @param viewModel The view model that provides the data and business logic for this screen.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoScreen(viewModel: TodoViewModel) {
@@ -44,9 +53,10 @@ fun TodoScreen(viewModel: TodoViewModel) {
             TopAppBar(
                 title = {
                     Text(
-                        "My Tasks",
+                        "Tasks",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp
+                        fontSize = 34.sp,
+                        fontFamily = FontFamily.SansSerif
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -185,6 +195,16 @@ fun TodoScreen(viewModel: TodoViewModel) {
     }
 }
 
+/**
+ * A composable that represents a single to-do item in the list.
+ *
+ * It displays the task title, an icon to indicate its completion status, and a delete button.
+ * The user can tap on the item to toggle its completion status.
+ *
+ * @param todo The to-do item to display.
+ * @param onToggle A callback that is invoked when the user taps on the item to toggle its completion status.
+ * @param onDelete A callback that is invoked when the user taps on the delete button.
+ */
 @Composable
 fun TodoItem(
     todo: Todo,
@@ -256,8 +276,16 @@ fun TodoItem(
     }
 }
 
+/**
+ * Represents the different ways to filter the to-do list.
+ *
+ * @param label The string label for the filter type.
+ */
 enum class FilterType(val label: String) {
+    /** Show all tasks. */
     ALL("All"),
+    /** Show only active (not completed) tasks. */
     ACTIVE("Active"),
+    /** Show only completed tasks. */
     COMPLETED("Completed")
 }
