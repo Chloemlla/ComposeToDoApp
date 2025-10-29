@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.androidx.activity.compose.v190)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation("androidx.compose.material:material:1.9.4")
 
     // Room
     implementation(libs.androidx.room.runtime)

@@ -183,11 +183,43 @@ fun TodoScreen(viewModel: TodoViewModel) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filteredTodos, key = { it.id }) { todo ->
-                        TodoItem(
-                            todo = todo,
-                            onToggle = { viewModel.updateTodo(todo) },
-                            onDelete = { viewModel.deleteTodo(todo) }
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { dismissValue ->
+                                if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                    viewModel.deleteTodo(todo)
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
                         )
+
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            enableDismissFromStartToEnd = false, // Only allow swipe from right to left
+                            backgroundContent = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.error)
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = Alignment.CenterEnd
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                        ) {
+                            TodoItem(
+                                todo = todo,
+                                onToggle = { viewModel.updateTodo(todo) },
+                                onDelete = { viewModel.deleteTodo(todo) }
+                            )
+                        }
                     }
                 }
             }
@@ -214,6 +246,7 @@ fun TodoItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .clickable { onToggle() },
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(
