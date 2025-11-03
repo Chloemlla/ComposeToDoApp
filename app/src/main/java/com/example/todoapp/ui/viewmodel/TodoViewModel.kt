@@ -44,9 +44,22 @@ class TodoViewModel(application: Application) : AndroidViewModel(application) {
      * Adds a new to-do item to the database.
      *
      * @param title The title of the new to-do item.
+     * @param isDone The completion status (default is false for new tasks).
      */
     fun addTodo(title: String) = viewModelScope.launch {
-        if (title.isNotBlank()) repository.insert(Todo(title = title))
+        if (title.isNotBlank()) {
+            repository.insert(Todo(title = title))
+        }
+    }
+
+    /**
+     * Restores a deleted to-do item with its original ID and properties.
+     * Uses REPLACE conflict strategy to restore the exact same record.
+     *
+     * @param todo The original to-do item to restore.
+     */
+    fun restoreTodo(todo: Todo) = viewModelScope.launch {
+        repository.insert(todo)
     }
 
     /**

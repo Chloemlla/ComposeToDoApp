@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.todoapp.data.model.Todo
 import com.example.todoapp.ui.viewmodel.TodoViewModel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 /**
  * The main screen of the To-Do application.
@@ -40,6 +42,13 @@ fun TodoScreen(viewModel: TodoViewModel) {
     val todos by viewModel.allTodos.collectAsState()
     var newTask by remember { mutableStateOf("") }
     var filterType by remember { mutableStateOf(FilterType.ALL) }
+
+    // Snackbar state
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // snackbar Jod
+    val snackbarJob by remember { mutableStateOf <Job?>(null) }
 
     // Filter todos based on selected filter
     val filteredTodos = when (filterType) {
@@ -64,6 +73,9 @@ fun TodoScreen(viewModel: TodoViewModel) {
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         },
         floatingActionButton = {
             // Optional: Could add a FAB for adding tasks
@@ -186,7 +198,25 @@ fun TodoScreen(viewModel: TodoViewModel) {
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { dismissValue ->
                                 if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                    //cancel existing snackbar
+                                    snackbarJob?.cancel()
+
+                                    // Delete the todo
                                     viewModel.deleteTodo(todo)
+
+                                    // Show snackbar with undo action
+                                    scope.launch {
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = "Task deleted",
+                                            actionLabel = "Undo",
+                                            duration = SnackbarDuration.Short
+                                        )
+
+                                        // If user clicks "Undo", restore the task
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            viewModel.restoreTodo(todo)
+                                        }
+                                    }
                                     true
                                 } else {
                                     false
@@ -196,7 +226,7 @@ fun TodoScreen(viewModel: TodoViewModel) {
 
                         SwipeToDismissBox(
                             state = dismissState,
-                            enableDismissFromStartToEnd = false, // Only allow swipe from right to left
+                            enableDismissFromStartToEnd = false,
                             backgroundContent = {
                                 Box(
                                     modifier = Modifier
@@ -217,7 +247,22 @@ fun TodoScreen(viewModel: TodoViewModel) {
                             TodoItem(
                                 todo = todo,
                                 onToggle = { viewModel.updateTodo(todo) },
-                                onDelete = { viewModel.deleteTodo(todo) }
+                                onDelete = {
+                                    viewModel.deleteTodo(todo)
+
+                                    // Show snackbar for button delete as well
+                                    scope.launch {
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = "Task deleted",
+                                            actionLabel = "Undo",
+                                            duration = SnackbarDuration.Short
+                                        )
+
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            viewModel.addTodo(todo.title)
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
