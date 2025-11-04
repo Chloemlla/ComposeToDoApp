@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -15,9 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -40,6 +37,7 @@ import kotlinx.coroutines.Job
 @Composable
 fun TodoScreen(viewModel: TodoViewModel) {
     val todos by viewModel.allTodos.collectAsState()
+
     var newTask by remember { mutableStateOf("") }
     var filterType by remember { mutableStateOf(FilterType.ALL) }
 
@@ -47,8 +45,8 @@ fun TodoScreen(viewModel: TodoViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // snackbar Jod
-    val snackbarJob by remember { mutableStateOf <Job?>(null) }
+    // Make snackbarJob a mutable state variable to hold the reference to the current Job
+    var snackbarJob by remember { mutableStateOf<Job?>(null) }
 
     // Filter todos based on selected filter
     val filteredTodos = when (filterType) {
@@ -85,7 +83,7 @@ fun TodoScreen(viewModel: TodoViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
         ) {
             // Input Section
             Card(
@@ -195,34 +193,28 @@ fun TodoScreen(viewModel: TodoViewModel) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filteredTodos, key = { it.id }) { todo ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { dismissValue ->
-                                if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                                    //cancel existing snackbar
-                                    snackbarJob?.cancel()
+                        val dismissState = rememberSwipeToDismissBoxState()
 
-                                    // Delete the todo
-                                    viewModel.deleteTodo(todo)
+                        // Handle dismiss action
+                        LaunchedEffect(dismissState.currentValue) {
+                            if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                                snackbarJob?.cancel()
+                                viewModel.deleteTodo(todo)
 
-                                    // Show snackbar with undo action
-                                    scope.launch {
-                                        val result = snackbarHostState.showSnackbar(
-                                            message = "Task deleted",
-                                            actionLabel = "Undo",
-                                            duration = SnackbarDuration.Short
-                                        )
+                                snackbarJob = scope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "Task deleted",
+                                        actionLabel = "Undo",
+                                        duration = SnackbarDuration.Short
+                                    )
 
-                                        // If user clicks "Undo", restore the task
-                                        if (result == SnackbarResult.ActionPerformed) {
-                                            viewModel.restoreTodo(todo)
-                                        }
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        viewModel.restoreTodo(todo)
                                     }
-                                    true
-                                } else {
-                                    false
+                                    dismissState.reset()
                                 }
                             }
-                        )
+                        }
 
                         SwipeToDismissBox(
                             state = dismissState,
@@ -248,10 +240,10 @@ fun TodoScreen(viewModel: TodoViewModel) {
                                 todo = todo,
                                 onToggle = { viewModel.updateTodo(todo) },
                                 onDelete = {
+                                    snackbarJob?.cancel()
                                     viewModel.deleteTodo(todo)
 
-                                    // Show snackbar for button delete as well
-                                    scope.launch {
+                                    snackbarJob = scope.launch {
                                         val result = snackbarHostState.showSnackbar(
                                             message = "Task deleted",
                                             actionLabel = "Undo",
@@ -259,7 +251,7 @@ fun TodoScreen(viewModel: TodoViewModel) {
                                         )
 
                                         if (result == SnackbarResult.ActionPerformed) {
-                                            viewModel.addTodo(todo.title)
+                                            viewModel.restoreTodo(todo)
                                         }
                                     }
                                 }
@@ -274,13 +266,6 @@ fun TodoScreen(viewModel: TodoViewModel) {
 
 /**
  * A composable that represents a single to-do item in the list.
- *
- * It displays the task title, an icon to indicate its completion status, and a delete button.
- * The user can tap on the item to toggle its completion status.
- *
- * @param todo The to-do item to display.
- * @param onToggle A callback that is invoked when the user taps on the item to toggle its completion status.
- * @param onDelete A callback that is invoked when the user taps on the delete button.
  */
 @Composable
 fun TodoItem(
@@ -291,7 +276,6 @@ fun TodoItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
             .clickable { onToggle() },
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(

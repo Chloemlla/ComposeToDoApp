@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation("androidx.compose.material:material:1.9.4")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
 
     // Room
     implementation(libs.androidx.room.runtime)

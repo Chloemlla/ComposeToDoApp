@@ -1,5 +1,6 @@
 package com.example.todoapp
 
+import TodoViewModelFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,31 +9,39 @@ import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todoapp.ui.view.TodoScreen
 import com.example.todoapp.ui.viewmodel.TodoViewModel
+// IMPORTANT: Make sure this file exists and contains the Context.dataStore extension
+import com.example.todoapp.data.dataStore
+import com.example.todoapp.data.db.TodoDatabase
+import com.example.todoapp.repository.SettingsRepository
+import com.example.todoapp.repository.TodoRepository
 
-/**
- * The main activity of the To-Do application.
- *
- * This activity is the entry point of the application and hosts the [TodoScreen] composable.
- */
+
 class MainActivity : ComponentActivity() {
-    /**
-     * Called when the activity is first created.
-     *
-     * This method sets up the content of the activity, including the theme and the main screen.t
-     *
-     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
-     * this Bundle contains the data it most recently supplied in [onSaveInstanceState].
-     * Note: Otherwise it is null.
-     */
+
+    // We keep the settingsRepository lazy for a clean split
+    private val settingsRepository by lazy {
+        SettingsRepository(this.dataStore)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // 1. Initialize the TodoRepository here using the applicationContext
+        val todoDao = TodoDatabase.getDatabase(applicationContext).todoDao()
+        val todoRepository = TodoRepository(todoDao)
+
+        // 2. Create the custom factory
+        val factory = TodoViewModelFactory(
+            settingsRepository = settingsRepository,
+            todoRepository = todoRepository
+        )
+
         setContent {
             MaterialTheme {
-                // Use viewModel with factory for AndroidViewModel
+                // 3. Use your custom factory
                 val viewModel: TodoViewModel = viewModel(
-                    factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
-                        .getInstance(application)
+                    factory = factory
                 )
                 TodoScreen(viewModel)
             }
