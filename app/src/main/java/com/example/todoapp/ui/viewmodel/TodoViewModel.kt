@@ -5,37 +5,36 @@ import androidx.lifecycle.viewModelScope
 import com.example.todoapp.data.model.Todo
 import com.example.todoapp.repository.SettingsRepository
 import com.example.todoapp.repository.TodoRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-// 1. Changed inheritance to ViewModel (not AndroidViewModel)
-class TodoViewModel(
-    // 2. Injected dependencies via the custom factory
+@HiltViewModel
+class TodoViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val todoRepository: TodoRepository
 ) : ViewModel() {
 
-
     // --- Core To-Do Logic ---
 
-    // Using MutableStateFlow/StateFlow for simplicity, though Flow<List<Todo>> is also common.
     private val _allTodos = MutableStateFlow<List<Todo>>(emptyList())
     val allTodos: StateFlow<List<Todo>> = _allTodos
 
     init {
         viewModelScope.launch {
-            // Use the injected todoRepository
             todoRepository.allTodos.collect {
                 _allTodos.value = it
             }
         }
     }
 
-    // All your existing CRUD functions (addTodo, updateTodo, deleteTodo, etc.) remain the same,
-    // simply using 'todoRepository.' instead of the old 'repository.'
+    /**
+     * Adds a new to-do item to the database.
+     *
+     * @param title The title of the new to-do item.
+     */
     fun addTodo(title: String) = viewModelScope.launch {
         if (title.isNotBlank()) {
             todoRepository.insert(Todo(title = title))
@@ -63,9 +62,12 @@ class TodoViewModel(
         todoRepository.insert(todo)
     }
 
+    /**
+     * Deletes a to-do item from the database.
+     *
+     * @param todo The to-do item to delete.
+     */
     fun deleteTodo(todo: Todo) = viewModelScope.launch {
         todoRepository.delete(todo)
     }
-
-    // ...
 }
